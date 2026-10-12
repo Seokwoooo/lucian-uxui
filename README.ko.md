@@ -38,6 +38,12 @@ lucian-uxui 스킬을 써서 여기 있는 요소를 우선적으로 써줘.
 lucian-uxui로 로그인 화면 추가해줘. 기존 로그인 처리 코드는 그대로 둬.
 ```
 
+[갤러리](https://lucianlabs.dev/uxui-prompt/)에서 고른 요소를 쓰고 싶다면 번호나 링크를 알려 주세요.
+
+```text
+lucian-uxui 스킬로 056번 요소를 요금제 섹션에 넣어줘.
+```
+
 직접 부를 수도 있습니다. Claude Code에서는 `/lucian-uxui …`(플러그인으로 설치했다면 `/lucian-uxui:lucian-uxui …`), Codex에서는 `$lucian-uxui …`로 부르세요.
 
 에이전트는 이렇게 진행합니다.

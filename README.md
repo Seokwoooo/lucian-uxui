@@ -38,6 +38,12 @@ Use the lucian-uxui skill and prefer its elements.
 Add a sign-in screen with lucian-uxui. Keep my existing auth handlers.
 ```
 
+To use a specific element from the [gallery](https://lucianlabs.dev/uxui-prompt/), give its number or link:
+
+```text
+Use lucian-uxui to add element #056 to the pricing section.
+```
+
 You can also call it directly: `/lucian-uxui …` in Claude Code (`/lucian-uxui:lucian-uxui` when installed as a plugin) or `$lucian-uxui …` in Codex.
 
 The agent then:

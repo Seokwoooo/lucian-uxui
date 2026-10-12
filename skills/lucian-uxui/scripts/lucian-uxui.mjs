@@ -16,7 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-const VERSION = '1.0.0';
+const VERSION = '1.1.0';
 const SOURCES = process.env.LUCIAN_UXUI_BASE
   ? process.env.LUCIAN_UXUI_BASE.split(',').map(base => base.trim().replace(/\/+$/, '')).filter(Boolean)
   : ['https://lucianlabs.dev/uxui-prompt/api/v1',
@@ -52,29 +52,43 @@ function parseArgs(argv) {
 }
 
 /* ---------- cache: survives across runs, never required ---------- */
-function pickCacheDir() {
-  const candidates = [
-    process.env.LUCIAN_UXUI_CACHE,
-    process.env.XDG_CACHE_HOME && path.join(process.env.XDG_CACHE_HOME, 'lucian-uxui'),
-    path.join(os.homedir(), '.cache', 'lucian-uxui'),
-    path.join(os.tmpdir(), 'lucian-uxui')
-  ].filter(Boolean);
-  for (const dir of candidates) {
-    try {
-      fs.mkdirSync(dir, { recursive: true });
-      fs.accessSync(dir, fs.constants.W_OK);
-      return dir;
-    } catch {}
+const CACHE_DIRS = [
+  process.env.LUCIAN_UXUI_CACHE,
+  process.env.XDG_CACHE_HOME && path.join(process.env.XDG_CACHE_HOME, 'lucian-uxui'),
+  path.join(os.homedir(), '.cache', 'lucian-uxui'),
+  path.join(os.tmpdir(), 'lucian-uxui')
+].filter(Boolean);
+// Probe with a real write: sandboxes (Codex, for one) can deny writes that access() still allows.
+function writable(dir) {
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    const probe = path.join(dir, `.probe-${process.pid}`);
+    fs.writeFileSync(probe, '');
+    fs.rmSync(probe);
+    return true;
+  } catch { return false; }
+}
+const cacheDir = CACHE_DIRS.find(writable) || null;
+// A folder this run cannot write, such as a read-only home in a sandbox, may still hold an earlier cache.
+const readDirs = [cacheDir, ...CACHE_DIRS.filter(dir => dir !== cacheDir && fs.existsSync(dir))].filter(Boolean);
+const cachePath = name => cacheDir && path.join(cacheDir, name);
+function readCache(name) {
+  for (const dir of readDirs) {
+    try { return fs.readFileSync(path.join(dir, name), 'utf8'); } catch {}
   }
   return null;
 }
-const cacheDir = pickCacheDir();
-const cachePath = name => cacheDir && path.join(cacheDir, name);
-function readCache(name) {
-  try { return fs.readFileSync(cachePath(name), 'utf8'); } catch { return null; }
-}
-function readMeta(name) {
-  try { return JSON.parse(readCache(name + '.meta.json')); } catch { return null; }
+// A cached file and its metadata must come from the same folder.
+function readCachedPair(name) {
+  for (const dir of readDirs) {
+    try {
+      const text = fs.readFileSync(path.join(dir, name), 'utf8');
+      let meta = null;
+      try { meta = JSON.parse(fs.readFileSync(path.join(dir, name + '.meta.json'), 'utf8')); } catch {}
+      return { text, meta };
+    } catch {}
+  }
+  return { text: null, meta: null };
 }
 // Write through a temp file so parallel agents never read half a file.
 function writeCache(name, text) {
@@ -146,8 +160,7 @@ async function download(rel, { etag, source } = {}) {
 // stale → revalidate with ETag; network down → use the stale copy and say so.
 async function cachedText(rel, { refresh } = {}) {
   const name = rel.replace(/\//g, '_');
-  const meta = readMeta(name);
-  const cached = readCache(name);
+  const { text: cached, meta } = readCachedPair(name);
   if (cached && meta && !refresh && Date.now() - meta.fetchedAt < TTL) return { text: cached, meta };
   try {
     const res = await download(rel, cached && meta ? { etag: meta.etag, source: meta.source } : {});
@@ -183,9 +196,10 @@ async function loadCatalog(lang, opts) {
   const version = (text.match(/version=(\w+)/) || [])[1] || '';
   return { items, byId: new Map(items.map(item => [item.id, item])), version, source: meta.source };
 }
+// Accepts 55, 055, #055 or a gallery link such as https://lucianlabs.dev/uxui-prompt/#055.
 const normalizeId = raw => {
-  const digits = String(raw).replace(/^#/, '').trim();
-  if (!/^\d+$/.test(digits)) throw new UsageError(`"${raw}" is not an element ID (use numbers like 050)`);
+  const digits = (String(raw).trim().match(/(?:^|#)(\d{1,6})$/) || [])[1];
+  if (!digits) throw new UsageError(`"${raw}" is not an element ID (use numbers like 050 or a gallery link)`);
   return digits.replace(/^0+(?=\d)/, '').padStart(3, '0');
 };
 

@@ -1,7 +1,7 @@
 {
   "name": "lucian-uxui",
   "displayName": "Lucian UX/UI",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Build sites and components with Lucian UX/UI Prompt: search a growing library of interactive UI elements (light/dark, keyboard, touch, reduced motion, no dependencies) and port the ones you pick into your project's framework and theme.",
   "author": {
     "name": "Seokwoooo",
@@ -10,5 +10,13 @@
   "homepage": "https://lucianlabs.dev/uxui-prompt/",
   "repository": "https://github.com/Seokwoooo/lucian-uxui",
   "license": "MIT",
-  "keywords": ["ui", "ux", "components", "design-system", "frontend", "animation", "skill"]
+  "keywords": [
+    "ui",
+    "ux",
+    "components",
+    "design-system",
+    "frontend",
+    "animation",
+    "skill"
+  ]
 }
