@@ -1,0 +1,16 @@
+{
+  "name": "lucian-uxui",
+  "description": "Lucian UX/UI: interactive UI elements from lucianlabs.dev/uxui-prompt for AI coding agents",
+  "owner": {
+    "name": "Seokwoooo",
+    "url": "https://github.com/Seokwoooo"
+  },
+  "plugins": [
+    {
+      "name": "lucian-uxui",
+      "source": "./",
+      "description": "Search the Lucian UX/UI Prompt library and port its interactive, dependency-free UI elements into any project's framework and theme",
+      "category": "design"
+    }
+  ]
+}
