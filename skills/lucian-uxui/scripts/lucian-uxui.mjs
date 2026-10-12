@@ -210,24 +210,54 @@ const SYNONYMS = {
   dark: ['night', 'theme'], light: ['day', 'theme'], mode: ['theme'], hero: ['button', 'card'], landing: ['button', 'card'],
   newsletter: ['subscribe', 'email'], subscribe: ['newsletter'], testimonial: ['card', 'quote'], profile: ['card', 'avatar']
 };
-const terms = text => (String(text).toLowerCase().match(/[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*/gu) || []);
+// Tags are English in both catalogs, so Korean UI words are mapped onto them as well.
+const KO_SYNONYMS = [
+  ['회원가입', ['signup', 'sign-up', 'register', 'onboarding']], ['가입', ['signup', 'sign-up']], ['로그인', ['login', 'sign-in', 'auth']],
+  ['비밀번호', ['password']], ['인증', ['otp', 'verification', 'auth']], ['버튼', ['button']], ['토글', ['toggle', 'switch']],
+  ['스위치', ['switch', 'toggle']], ['체크박스', ['checkbox']], ['요금', ['pricing', 'price', 'plan']], ['가격', ['pricing', 'price']],
+  ['결제', ['checkout', 'payment', 'billing']], ['장바구니', ['cart']], ['메뉴', ['menu', 'nav']], ['탭', ['tabs', 'tab']],
+  ['드롭다운', ['dropdown', 'select', 'menu']], ['검색', ['search']], ['입력', ['input', 'field']], ['태그', ['tags', 'chips']],
+  ['슬라이더', ['slider', 'range']], ['별점', ['rating', 'star']], ['카드', ['card']], ['모달', ['dialog', 'modal']],
+  ['팝업', ['dialog', 'popover']], ['툴팁', ['tooltip']], ['알림', ['toast', 'notification', 'alert']], ['토스트', ['toast']],
+  ['로딩', ['loading', 'spinner', 'skeleton']], ['진행', ['progress', 'loading']], ['빈 화면', ['empty-state', 'empty']],
+  ['오류', ['error', '404']], ['에러', ['error', '404']], ['차트', ['chart', 'graph']], ['그래프', ['chart', 'graph']],
+  ['대시보드', ['dashboard', 'kpi', 'chart', 'widget']], ['위젯', ['widget']], ['칸반', ['kanban', 'board', 'task']],
+  ['할 일', ['todo', 'task', 'checklist']], ['할일', ['todo', 'task', 'checklist']], ['투두', ['todo', 'checklist']],
+  ['달력', ['calendar', 'date']], ['캘린더', ['calendar', 'date']], ['일정', ['calendar', 'schedule', 'gantt']], ['날짜', ['date', 'calendar']],
+  ['다크', ['dark', 'theme', 'night']], ['테마', ['theme', 'dark']], ['설정', ['settings', 'toggle']], ['업로드', ['upload', 'file']],
+  ['파일', ['file', 'upload']], ['복사', ['copy', 'clipboard']], ['공유', ['share']], ['좋아요', ['like', 'heart']],
+  ['뉴스레터', ['newsletter', 'subscribe', 'email']], ['구독', ['subscribe', 'newsletter']], ['자주 묻는', ['faq', 'accordion']],
+  ['아코디언', ['accordion']], ['단계', ['stepper', 'wizard', 'steps']], ['온보딩', ['onboarding']], ['에디터', ['editor']],
+  ['편집', ['editor', 'edit']], ['테이블', ['table']], ['채팅', ['chat', 'message']], ['메시지', ['message', 'chat']],
+  ['프로필', ['profile', 'avatar']], ['지도', ['map']], ['타임라인', ['timeline']]
+];
+// Hyphenated words also count as their parts ("read-state" matches "state").
+function terms(text) {
+  const out = [];
+  for (const word of String(text).toLowerCase().match(/[\p{L}\p{N}]+(?:-[\p{L}\p{N}]+)*/gu) || []) {
+    out.push(word);
+    if (word.includes('-')) out.push(...word.split('-'));
+  }
+  return out;
+}
+// English matches whole words or prefixes ("switch" → "switches", but not "board" → "clipboard");
+// Korean also matches inside compounds ("가입" in "회원가입"), from two syllables up.
+function hit(t, word) {
+  if (t === word) return 1;
+  if (HANGUL.test(word)) return word.length >= 2 && t.includes(word) ? 0.8 : 0;
+  return word.length >= 3 && t.startsWith(word) ? 0.6 : 0;
+}
 function scoreItem(item, words, extra) {
   const fields = [
     [terms(item.title).concat(extra ? terms(extra.title) : []), 4],
-    [item.tags.concat(extra ? extra.tags : []), 4],
+    [item.tags.flatMap(terms), 4],
     [terms(item.category + ' ' + item.cat).concat(extra ? terms(extra.category) : []), 3],
     [terms(item.summary).concat(extra ? terms(extra.summary) : []), 1]
   ];
   let score = 0, matched = 0;
   for (const { word, weight } of words) {
     let best = 0;
-    for (const [list, w] of fields) {
-      for (const t of list) {
-        const hit = t === word ? 1 : (word.length >= 3 && (t.startsWith(word) || (word.length >= 4 && t.includes(word)))) ? 0.6
-          : HANGUL.test(word) && t.includes(word) ? 0.8 : 0;
-        if (hit * w > best) best = hit * w;
-      }
-    }
+    for (const [list, w] of fields) for (const t of list) best = Math.max(best, hit(t, word) * w);
     if (best) { score += best * weight; if (weight === 1) matched++; }
   }
   return { score: score + matched * 2, matched };
@@ -236,11 +266,14 @@ async function search(opts) {
   const query = opts.words.join(' ').trim();
   if (!query) throw new UsageError('search needs keywords, e.g. search "pricing toggle"');
   const catalog = await loadCatalog(opts.lang, opts);
-  // Korean words also search the Korean catalog, so "로그인" finds sign-in forms in --lang en.
-  const other = HANGUL.test(query) && opts.lang !== 'ko' ? await loadCatalog('ko', opts).catch(() => null) : null;
+  // Search the other language's titles and summaries too, so either language finds either catalog.
+  const other = await loadCatalog(opts.lang === 'ko' ? 'en' : 'ko', opts).catch(() => null);
   const base = terms(query);
   const words = base.map(word => ({ word, weight: 1 }));
-  for (const word of base) for (const alt of SYNONYMS[word] || []) if (!base.includes(alt)) words.push({ word: alt, weight: 0.5 });
+  const add = (word, weight) => { if (!words.some(w => w.word === word)) words.push({ word, weight }); };
+  const lower = query.toLowerCase();
+  for (const [ko, en] of KO_SYNONYMS) if (lower.includes(ko)) en.forEach(word => add(word, 0.8));
+  for (const word of base) for (const alt of SYNONYMS[word] || []) add(alt, 0.5);
   const results = catalog.items
     .filter(item => !opts.category || item.cat === opts.category)
     .map(item => ({ item, ...scoreItem(item, words, other && other.byId.get(item.id)) }))
