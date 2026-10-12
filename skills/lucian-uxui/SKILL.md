@@ -31,7 +31,7 @@ Add `--lang ko` for Korean copy. The default is `--lang en`. Use `--out <path>` 
 4. **Fetch what you picked**: `get <ids>`, at most a few at a time. Also run `tokens` once per project.
 5. **Port each element** following [references/porting.md](references/porting.md). Read it before your first port.
 6. **Check** both themes, a narrow mobile width (375px), keyboard use and `prefers-reduced-motion`.
-7. **Report** each element you used as `#ID title` with its live demo link `https://lucianlabs.dev/uxui-prompt/#ID`, what you adapted, and anything you could not check.
+7. **Report.** End your reply with a list of the elements you used. Give one line per element in the form `#ID title: where it is used, what you adapted, https://lucianlabs.dev/uxui-prompt/#ID`, and then list anything you could not check.
 
 ## Language
 
