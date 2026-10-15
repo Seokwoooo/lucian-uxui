@@ -16,7 +16,7 @@ import os from 'node:os';
 import path from 'node:path';
 import crypto from 'node:crypto';
 
-const VERSION = '1.1.0';
+const VERSION = '1.2.0';
 const SOURCES = process.env.LUCIAN_UXUI_BASE
   ? process.env.LUCIAN_UXUI_BASE.split(',').map(base => base.trim().replace(/\/+$/, '')).filter(Boolean)
   : ['https://lucianlabs.dev/uxui-prompt/api/v1',

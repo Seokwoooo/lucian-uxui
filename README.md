@@ -2,7 +2,7 @@
 
 Build sites and components with [Lucian UX/UI Prompt](https://lucianlabs.dev/uxui-prompt/) from inside Claude Code, Codex and other coding agents. Ask for a page and say to use lucian-uxui. The agent searches the library, fetches the elements that fit and ports them into your framework and theme.
 
-Every element is dependency-free HTML, CSS and JS with light and dark themes, pointer, touch and keyboard support, and reduced motion. The library has 200 elements today and keeps growing. New elements reach the skill without a skill update.
+Every element is dependency-free HTML, CSS and JS with light and dark themes, pointer, touch and keyboard support, and reduced motion. The library has 400 elements today, 200 interface parts and 200 website sections and animations, and keeps growing. New elements reach the skill without a skill update.
 
 [한국어 안내](README.ko.md)
 
