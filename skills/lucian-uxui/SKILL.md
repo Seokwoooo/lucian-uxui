@@ -5,7 +5,7 @@ description: Builds sites, pages and components from Lucian UX/UI Prompt (lucian
 
 # Lucian UX/UI
 
-Lucian UX/UI Prompt is a library of interactive UI elements. Each element is one self-contained snippet: a `<style>` block scoped to `.uNNN`, a root `<div class="ux uNNN">`, and a `<script>`. Every element reads its colors from `--ux-*` theme tokens. The library keeps growing (400 elements now, thousands later), so never assume what it contains. Search it every time.
+Lucian UX/UI Prompt is a library of interactive UI elements. Each element is one self-contained snippet: a `<style>` block scoped to `.uNNN`, a root `<div class="ux uNNN">`, and a `<script>`. Every element reads its colors from `--ux-*` theme tokens. The library keeps growing (450 elements now, thousands later), so never assume what it contains. Search it every time.
 
 All access goes through the bundled CLI. It caches on disk and falls back to a GitHub mirror when lucianlabs.dev is unreachable. `<skill-dir>` is the folder that contains this SKILL.md:
 
